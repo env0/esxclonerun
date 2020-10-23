@@ -72,6 +72,36 @@ optional arguments:
                         json='{"hostname":"1.1.1.1"}'
 ```
 
+## Integrate POC into a real system
+
+Probable steps:
+
+* Write what you really want in an egg folder
+* Install a slave VM on the client's ESX
+* ditch the CLI and `main` functions from `main.py`, keep all the rest of the functions
+* call the API like main does. For referce, relevant lines below:
+
+```
+python_package = pythoninslave.PythonPackage(args.egg_folder, args.egg_entry_module, args.egg_entry_function)
+esx_connection = connect(
+    esx_hostname=args.esx_hostname,
+    esx_username=args.esx_username,
+    esx_password=args.esx_password,
+    esx_port=args.esx_port,
+    verify_cert=not args.no_verify_cert)
+esx_content = esx_connection.RetrieveContent()
+slave_vm = slavevm.SlaveVM(
+    esx_hostname=args.esx_hostname,
+    esx_content=esx_content,
+    expected_slave_vm_name=args.slave_vm_name,
+    username=args.guest_username,
+    password=args.guest_password)
+output = python_package.run_in_slave(slave_vm=slave_vm, kwargs=kwargs, verify_cert=not args.no_verify_cert)
+```
+
+note: if master code does not run one off, but is part of a long living process, make sure to
+add bit more fine grain control for calling "disconnect" on the ESX connection after use.
+
 ### Using pipenv
 
 `pipenv` is modern `pip`, skip this if you are familiar with it.
