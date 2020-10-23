@@ -15,7 +15,7 @@ def main(args):
         esx_hostname=args.esx_hostname,
         esx_username=args.esx_username,
         esx_password=args.esx_password,
-        esx_port=args.port,
+        esx_port=args.esx_port,
         verify_cert=not args.no_verify_cert)
     esx_content = esx_connection.RetrieveContent()
     slave_vm = slavevm.SlaveVM(
@@ -50,17 +50,51 @@ def connect(esx_hostname, esx_username, esx_password, esx_port, verify_cert):
 
 logging.basicConfig(level=logging.DEBUG)
 parser = argparse.ArgumentParser()
-parser.add_argument("--esx-username", default="root")
-parser.add_argument("--esx-password", required=True)
-parser.add_argument("--esx-hostname", default="185.141.60.50")
-parser.add_argument("--slave-vm-name", default="esxlocal")
-parser.add_argument("--port", type=int, default=443)
-parser.add_argument("--no-verify-cert", action="store_true")
-parser.add_argument("--guest-username", default="me")
-parser.add_argument("--guest-password", default="env0rocks")
-parser.add_argument("--egg-folder", default="../slave")
-parser.add_argument("--egg-entry-module", default="run")
-parser.add_argument("--egg-entry-function", default="run")
-parser.add_argument("--egg-kwargs-json", required=True)
+parser.add_argument(
+    "--esx-username",
+    default="root",
+    help="Credentials for master accessing ESX")
+parser.add_argument(
+    "--esx-password",
+    required=True,
+    help="Credentials for master accessing ESX")
+parser.add_argument(
+    "--esx-hostname",
+    default="185.141.60.50",
+    help="ESX hostname / IP address")
+parser.add_argument("--esx-port", type=int, default=443)
+parser.add_argument(
+    "--slave-vm-name",
+    default="esxlocal",
+    help="Name of ubuntu slave VM to invoke python code in")
+parser.add_argument(
+    "--no-verify-cert",
+    action="store_true",
+    help="Dont verify ESX certificate")
+parser.add_argument(
+    "--guest-username",
+    default="me",
+    help="The slave VM guest OS credentials to use for running the egg")
+parser.add_argument(
+    "--guest-password",
+    default="env0rocks",
+    help="The slave VM guest OS credentials to use for running the egg")
+parser.add_argument(
+    "--egg-folder",
+    default="../slave",
+    help=("The egg is the python source code folder to run inside the slaveVM. "
+          "This arguments is the path to the folder"))
+parser.add_argument(
+    "--egg-entry-module",
+    default="run",
+    help="The entry point module of the egg (e.g., `run` if the filename is `run.py`). Will be used in an `import <entry_module>` statement")
+parser.add_argument(
+    "--egg-entry-function",
+    default="run",
+    help="The function in the entry point module to execute: <entry module>.<entry function>(**kwargs)")
+parser.add_argument(
+    "--egg-kwargs-json",
+    required=True,
+    help="""A JSON object for the names arguments to the entry point. Example: --egg-kwargs-json='{"hostname":"1.1.1.1"}'""")
 args = parser.parse_args()
 main(args)
