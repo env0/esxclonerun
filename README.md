@@ -1,29 +1,29 @@
-# ESXLocal
+# ESX Cloner
 
-Run a python function remotely on a Ubuntu slave VM hosted on an ESX, using `pyvmomi`.
+* clone VM inside an ESX (without vCenter)
+  * use pre installed ubuntu cloner VM
+  * command over `pyvmomi`
+* run a command and said clone
 
 ## Structure
 
-* `slave` folder - this folder contains the python source code files to run on the remote VM. currently:
-  * `run.py` - contains a single function `run` which is the "entry point"
-* `master` folder - the python library that should run on env0 side (tested from my linux devstation):
-  * `main.py` - the cli entry point, and main function
-  * `slavevm.py` - lowest layer API to download / upload files and run processes on remote guest OS in slave VM
-  * `bashinslave.py` - middle layer API that bundles few lower API calls to invoke a bash script remotely, collect it's output, and fail with proper error reporting
-  * `pythoninslave.py` - highest layer API that contains a class to package python source code folder and run it remotely.
+* `main.py` - the cli entry point, and main function
+* `slavevm.py` - lowest layer API to download / upload files and run processes on remote guest OS in slave VM
+* `bashinslave.py` - middle layer API that bundles few lower API calls to invoke a bash script remotely, collect it's output, and fail with proper error reporting
 
 ## Terminology
 
-* `master` - code that run on env0 side (or my devstation)
-* `slave VM` - the slave VM in ESX runs Ubuntu as a `guest` OS, and inside it the `egg` runs
-* `guest` - the OS running inside the `slave VM`. Currently assumed to be ubuntu
-* `egg` - the python source code folder to run inside the `slave VM`
+* `main` - code that run on env0 side (or my devstation)
+* `cloner` - the preinstalled ubuntu VM (must be running) to use for cloning (run ovftool)
+* `cloned` - the vm to clone (`to_clone` by default)
+* `clone` - the result of the clone (currently, cleanup is manual)
+* `slave VM` - either the cloner VM or the clone VM
+* `guest` - the OS running inside a `slave VM`. Currently assumed to be ubuntu
 
 ## Example CLI (that worked for me)
 
 ```
-cd master
-pipenv run python3 main.py --esx-password=<ESX ROOT PASSWORD> --no-verify-cert --egg-kwargs='{"esx_hostname":"185.141.60.50", "esx_username": "root", "esx_password": "<ESX ROOT PASSWORD>"}'
+pipenv run python3 main.py --esx-password=<ESX ROOT PASSWORD> --no-verify-cert -cloner-esx-password=<ESX ROOT PASSWORD>
 ```
 
 ## Configuration
@@ -31,7 +31,6 @@ pipenv run python3 main.py --esx-password=<ESX ROOT PASSWORD> --no-verify-cert -
 All configuration parameters are accessible from CLI. to get help:
 
 ```
-cd master
 pipenv run python3 main.py --help
 ```
 
@@ -39,9 +38,11 @@ output when this document is created:
 
 ```
 usage: main.py [-h] [--esx-username ESX_USERNAME] --esx-password ESX_PASSWORD [--esx-hostname ESX_HOSTNAME] [--esx-port ESX_PORT]
-               [--slave-vm-name SLAVE_VM_NAME] [--no-verify-cert] [--guest-username GUEST_USERNAME]
-               [--guest-password GUEST_PASSWORD] [--egg-folder EGG_FOLDER] [--egg-entry-module EGG_ENTRY_MODULE]
-               [--egg-entry-function EGG_ENTRY_FUNCTION] --egg-kwargs-json EGG_KWARGS_JSON
+               [--no-verify-cert] [--cloner-vm-name CLONER_VM_NAME] [--cloner-username CLONER_USERNAME]
+               [--cloner-password CLONER_PASSWORD] [--cloner-esx-username CLONER_ESX_USERNAME] --cloner-esx-password
+               CLONER_ESX_PASSWORD [--cloner-esx-hostname CLONER_ESX_HOSTNAME] [--cloner-esx-port CLONER_ESX_PORT]
+               [--vm-to-clone VM_TO_CLONE] [--clone-name CLONE_NAME] [--clone-username CLONE_USERNAME]
+               [--clone-password CLONE_PASSWORD]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -52,52 +53,40 @@ optional arguments:
   --esx-hostname ESX_HOSTNAME
                         ESX hostname / IP address
   --esx-port ESX_PORT
-  --slave-vm-name SLAVE_VM_NAME
-                        Name of ubuntu slave VM to invoke python code in
   --no-verify-cert      Dont verify ESX certificate
-  --guest-username GUEST_USERNAME
-                        The slave VM guest OS credentials to use for running the egg
-  --guest-password GUEST_PASSWORD
-                        The slave VM guest OS credentials to use for running the egg
-  --egg-folder EGG_FOLDER
-                        The egg is the python source code folder to run inside the slaveVM. This arguments is the path to the
-                        folder
-  --egg-entry-module EGG_ENTRY_MODULE
-                        The entry point module of the egg (e.g., `run` if the filename is `run.py`). Will be used in an `import
-                        <entry_module>` statement
-  --egg-entry-function EGG_ENTRY_FUNCTION
-                        The function in the entry point module to execute: <entry module>.<entry function>(**kwargs)
-  --egg-kwargs-json EGG_KWARGS_JSON
-                        A JSON object for the names arguments to the entry point. Example: --egg-kwargs-
-                        json='{"hostname":"1.1.1.1"}'
+  --cloner-vm-name CLONER_VM_NAME
+                        Name of ubuntu slave VM to use for cloning a VM (in ESX due to vCenter not being available)
+  --cloner-username CLONER_USERNAME
+                        Cloner slave VM guest OS credentials to use for running ovftool
+  --cloner-password CLONER_PASSWORD
+                        Cloner slave VM guest OS credentials to use for running ovftool
+  --cloner-esx-username CLONER_ESX_USERNAME
+                        Credentials for cloner accessing ESX (via ovftool)
+  --cloner-esx-password CLONER_ESX_PASSWORD
+                        Credentials for cloner accessing ESX (via ovftool)
+  --cloner-esx-hostname CLONER_ESX_HOSTNAME
+                        ESX hostname / IP address from within the cloner (for ovftool)
+  --cloner-esx-port CLONER_ESX_PORT
+  --vm-to-clone VM_TO_CLONE
+                        Name of VM to clone
+  --clone-name CLONE_NAME
+                        Name of the newly created cloned VM
+  --clone-username CLONE_USERNAME
+                        Clone slave VM guest OS credentials to use for running final script
+  --clone-password CLONE_PASSWORD
+                        Clone slave VM guest OS credentials to use for running final script
 ```
 
 ## Integrate POC into a real system
 
 Probable steps:
 
-* Write what you really want in an egg folder
-* Install a slave VM on the client's ESX
-* ditch the CLI and `main` functions from `main.py`, keep all the rest of the functions
-* call the API like main does. For referce, relevant lines below:
+* Install a cloner VM on the client's ESX
+* Create a to_clone template VM on the client's ESX
+* implement real ansible commands instead of current `ls -l` in main.py
 
-```
-python_package = pythoninslave.PythonPackage(args.egg_folder, args.egg_entry_module, args.egg_entry_function)
-esx_connection = connect(
-    esx_hostname=args.esx_hostname,
-    esx_username=args.esx_username,
-    esx_password=args.esx_password,
-    esx_port=args.esx_port,
-    verify_cert=not args.no_verify_cert)
-esx_content = esx_connection.RetrieveContent()
-slave_vm = slavevm.SlaveVM(
-    esx_hostname=args.esx_hostname,
-    esx_content=esx_content,
-    expected_slave_vm_name=args.slave_vm_name,
-    username=args.guest_username,
-    password=args.guest_password)
-output = python_package.run_in_slave(slave_vm=slave_vm, kwargs=kwargs, verify_cert=not args.no_verify_cert)
-```
+*make sure to remove CDROM devices from to_clone template* and power it off
+
 
 note: if master code does not run one off, but is part of a long living process, make sure to
 add bit more fine grain control for calling "disconnect" on the ESX connection after use.
@@ -109,12 +98,11 @@ add bit more fine grain control for calling "disconnect" on the ESX connection a
 Quick getting started to fetch pip dependencies:
 
 ```
-cd master
 sudo pip3 install pipenv
 pipenv sync -d
 ```
 
-### How the Ubuntu slave vm was created:
+### How the Ubuntu cloner vm was created:
 
 * used iso from storage for ubuntu 20.04.1
 * username: me password: env0rocks
