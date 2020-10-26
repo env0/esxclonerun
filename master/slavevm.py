@@ -13,9 +13,26 @@ class SlaveVM:
             username=username,
             password=password)
         self._slave_vm = self._find_slave_vm(expected_slave_vm_name)
-        self._verify_vm_tools_are_installed()
         self._process_manager = esx_content.guestOperationsManager.processManager
         self._file_manager = esx_content.guestOperationsManager.fileManager
+
+    def verify_vm_tools_are_installed(self):
+        status = self._slave_vm.guest.toolsStatus
+        if status != "toolsOk":
+            raise Exception(f"VM tools are not properly installed in slave vm: {status}")
+        logging.info("Successfully verified VM tools installation in guest OS")
+
+    def wait_for_vm_tools_to_be_installed(self, timeout=120, interval=1):
+        start = time.time()
+        while True:
+            try:
+                self.verify_vm_tools_are_installed()
+                return
+            except:
+                if start + timeout > time.time():
+                    time.sleep(interval)
+                else:
+                    raise
 
     def spawn_process_in_slave(self, executable_path, arguments):
         program_spec = pyVmomi.vim.vm.guest.ProcessManager.ProgramSpec(
@@ -83,12 +100,6 @@ class SlaveVM:
                     logging.info("Slave VM found")
                     return vm
         raise Exception(f"VM with name {expected_slave_vm_name} was not found")
-
-    def _verify_vm_tools_are_installed(self):
-        status = self._slave_vm.guest.toolsStatus
-        if status != "toolsOk":
-            raise Exception(f"VM tools are not properly installed in slave vm: {status}")
-        logging.info("Successfully verified VM tools installation in guest OS")
 
     def _fix_url_for_public_hostname(self, url):
         # When : host argument becomes https://*:443/guestFile?

@@ -118,11 +118,14 @@ pipenv sync -d
 
 * used iso from storage for ubuntu 20.04.1
 * username: me password: env0rocks
+* make sure to have enough space for the vmdk of the cloned VM (plus a spare of +- 8GB)
 * no ssh, whole disk (16GB) formatting, static ip address
-* sudo apt-get update ; sudo apt-get install unattended-upgrades ; sudo apt-get install python3-pip
-* sudo pip3 install pyvmomi
+* sudo apt-get update ; sudo apt-get upgrade ; sudo apt-get install unattended-upgrades
+* sudo apt-get install python3-pip ; sudo pip3 install pyvmomi
+* install ovftool (copy in downloads folder) - i used file.io to transfer the file to the VM
 
 ### a possible way to create private routing:
 
 define a private vlan / new vswitch for a new private network interface for the esxlocal VM and a new vmk.
 private a in 192.168.x.x
+

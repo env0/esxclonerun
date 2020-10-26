@@ -5,12 +5,10 @@ import json
 import pprint
 import pyVim.connect
 import slavevm
-import pythoninslave
+import bashinslave
 
 
 def main(args):
-    kwargs = json.loads(args.egg_kwargs_json)
-    python_package = pythoninslave.PythonPackage(args.egg_folder, args.egg_entry_module, args.egg_entry_function)
     esx_connection = connect(
         esx_hostname=args.esx_hostname,
         esx_username=args.esx_username,
@@ -21,12 +19,35 @@ def main(args):
     slave_vm = slavevm.SlaveVM(
         esx_hostname=args.esx_hostname,
         esx_content=esx_content,
-        expected_slave_vm_name=args.slave_vm_name,
-        username=args.guest_username,
-        password=args.guest_password)
-    output = python_package.run_in_slave(slave_vm=slave_vm, kwargs=kwargs, verify_cert=not args.no_verify_cert)
+        expected_slave_vm_name=args.cloner_vm_name,
+        username=args.cloner_username,
+        password=args.cloner_password)
+    slave_vm.verify_vm_tools_are_installed()
+    logging.info("Cloning VM")
+    script = _CLONING_SCRIPT % dict(
+        username=args.cloner_esx_username,
+        password=args.cloner_esx_password,
+        hostname=args.cloner_esx_hostname,
+        port=args.cloner_esx_port,
+        to_clone_vm_name=args.vm_to_clone,
+        new_clone_vm_name=args.clone_name)
+    bashinslave.execute_bash_script_in_slave_vm(
+        slave_vm, script, verify_cert=not args.no_verify_cert, interval=1, timeout=600)
+    logging.info("VM Cloned successfully, waiting to be able to run on it...")
+    clone_slave_vm = slavevm.SlaveVM(
+        esx_hostname=args.esx_hostname,
+        esx_content=esx_content,
+        expected_slave_vm_name=args.clone_name,
+        username=args.clone_username,
+        password=args.clone_password)
+    clone_slave_vm.wait_for_vm_tools_to_be_installed()
+    logging.info("VM tools are online")
+    bashinslave.wait_for_slave_vm_to_wake_up(clone_slave_vm, verify_cert=not args.no_verify_cert)
+    logging.info("VM Cloned successfully, woke up successfully")
+    output = bashinslave.execute_bash_script_in_slave_vm(
+        clone_slave_vm, "ls /", verify_cert=not args.no_verify_cert)
     print("Output:")
-    pprint.pprint(output)
+    print(output)
     # lower level API:
     # output = bashinslave.execute_bash_script_in_slave_vm(slave_vm, "echo hello\ndate\n", verify_cert=not args.no_verify_cert)
     # pid = slave_vm.spawn_process_in_slave(
@@ -35,6 +56,18 @@ def main(args):
     # slave_vm.wait_for_process_to_finish(pid)
     # slave_vm.put_file("/tmp/pash", b"yuvu", verify_cert=False)
     # contents = slave_vm.get_file("/tmp/pash", verify_cert=False)
+
+
+_CLONING_SCRIPT = """
+set -x
+set -e
+cd /tmp
+rm -fr clone*
+ovftool vi://%(username)s:%(password)s@%(hostname)s:%(port)d/%(to_clone_vm_name)s clone.ova
+ovftool --powerOn --name=%(new_clone_vm_name)s clone.ova vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
+rm -fr clone*
+"""
+
 
 def connect(esx_hostname, esx_username, esx_password, esx_port, verify_cert):
     connection_method = pyVim.connect.SmartConnect if verify_cert else pyVim.connect.SmartConnectNoSSL
@@ -64,37 +97,49 @@ parser.add_argument(
     help="ESX hostname / IP address")
 parser.add_argument("--esx-port", type=int, default=443)
 parser.add_argument(
-    "--slave-vm-name",
-    default="esxlocal",
-    help="Name of ubuntu slave VM to invoke python code in")
-parser.add_argument(
     "--no-verify-cert",
     action="store_true",
     help="Dont verify ESX certificate")
 parser.add_argument(
-    "--guest-username",
+    "--cloner-vm-name",
+    default="esxlocal",
+    help="Name of ubuntu slave VM to use for cloning a VM (in ESX due to vCenter not being available)")
+parser.add_argument(
+    "--cloner-username",
     default="me",
-    help="The slave VM guest OS credentials to use for running the egg")
+    help="Cloner slave VM guest OS credentials to use for running ovftool")
 parser.add_argument(
-    "--guest-password",
+    "--cloner-password",
     default="env0rocks",
-    help="The slave VM guest OS credentials to use for running the egg")
+    help="Cloner slave VM guest OS credentials to use for running ovftool")
 parser.add_argument(
-    "--egg-folder",
-    default="../slave",
-    help=("The egg is the python source code folder to run inside the slaveVM. "
-          "This arguments is the path to the folder"))
+    "--cloner-esx-username",
+    default="root",
+    help="Credentials for cloner accessing ESX (via ovftool)")
 parser.add_argument(
-    "--egg-entry-module",
-    default="run",
-    help="The entry point module of the egg (e.g., `run` if the filename is `run.py`). Will be used in an `import <entry_module>` statement")
-parser.add_argument(
-    "--egg-entry-function",
-    default="run",
-    help="The function in the entry point module to execute: <entry module>.<entry function>(**kwargs)")
-parser.add_argument(
-    "--egg-kwargs-json",
+    "--cloner-esx-password",
     required=True,
-    help="""A JSON object for the names arguments to the entry point. Example: --egg-kwargs-json='{"hostname":"1.1.1.1"}'""")
+    help="Credentials for cloner accessing ESX (via ovftool)")
+parser.add_argument(
+    "--cloner-esx-hostname",
+    default="185.141.60.50",
+    help="ESX hostname / IP address from within the cloner (for ovftool)")
+parser.add_argument("--cloner-esx-port", type=int, default=443)
+parser.add_argument(
+    "--vm-to-clone",
+    default="to_clone",
+    help="Name of VM to clone")
+parser.add_argument(
+    "--clone-name",
+    default="clone",
+    help="Name of the newly created cloned VM")
+parser.add_argument(
+    "--clone-username",
+    default="me",
+    help="Clone slave VM guest OS credentials to use for running final script")
+parser.add_argument(
+    "--clone-password",
+    default="env0rocks",
+    help="Clone slave VM guest OS credentials to use for running final script")
 args = parser.parse_args()
 main(args)
