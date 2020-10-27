@@ -1,4 +1,4 @@
-# ESX Cloner
+# ESX Clone Run
 
 * clone VM inside an ESX (without vCenter)
   * use pre installed ubuntu cloner VM
