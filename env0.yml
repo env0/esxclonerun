@@ -7,4 +7,4 @@ deploy:
         - |
             set -e
             pip3 install pyvmomi requests
-            python3 main.py --esx-password="$PASSWORD" --no-verify-cert --cloner-esx-password="$PASSWORD"
+            python3 main.py --esx-hostname=$HOST --esx-username=$USER --esx-password="$PASSWORD" --no-verify-cert --cloner-esx-username=$USER --cloner-esx-hostname=$HOST --cloner-esx-password="$PASSWORD" --vm-to-clone="to_clone" --clone-name="clone"
