@@ -1,0 +1,10 @@
+version: 1
+
+deploy:
+  steps:
+    terraformApply:
+      before:
+        - |
+            set -e
+            pip3 install pyvmomi requests
+            python3 main.py --esx-password="$PASSWORD" --no-verify-cert --cloner-esx-password="$PASSWORD"
