@@ -28,7 +28,7 @@ pipenv run python3 main.py --esx-password=<ESX ROOT PASSWORD> --no-verify-cert -
 
 ## Configuration
 
-All configuration parameters are accessible from CLI. to get help:
+All configuration parameters are accessible from CLI. *please note some arguments must come before the command (e.g., "run", "clone) and some only come after it.* to get help:
 
 ```
 pipenv run python3 main.py --help
@@ -37,12 +37,17 @@ pipenv run python3 main.py --help
 output when this document is created:
 
 ```
+$$ pipenv run python3 main.py --help
 usage: main.py [-h] [--esx-username ESX_USERNAME] --esx-password ESX_PASSWORD [--esx-hostname ESX_HOSTNAME] [--esx-port ESX_PORT]
-               [--no-verify-cert] [--cloner-vm-name CLONER_VM_NAME] [--cloner-username CLONER_USERNAME]
-               [--cloner-password CLONER_PASSWORD] [--cloner-esx-username CLONER_ESX_USERNAME] --cloner-esx-password
-               CLONER_ESX_PASSWORD [--cloner-esx-hostname CLONER_ESX_HOSTNAME] [--cloner-esx-port CLONER_ESX_PORT]
-               [--vm-to-clone VM_TO_CLONE] [--clone-name CLONE_NAME] [--clone-username CLONE_USERNAME]
-               [--clone-password CLONE_PASSWORD]
+               [--no-verify-cert] [--clone-name CLONE_NAME] [--clone-username CLONE_USERNAME] [--clone-password CLONE_PASSWORD]
+               {clone,bash,run,destroy} ...
+
+positional arguments:
+  {clone,bash,run,destroy}
+    clone               Clone a VM and power on the clone
+    bash                Run a bash script inside a clone VM (linux guest only)
+    run                 Run a program on clone VM (windows and linux guests compatible)
+    destroy             Destroy the cloned VM
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -54,6 +59,23 @@ optional arguments:
                         ESX hostname / IP address
   --esx-port ESX_PORT
   --no-verify-cert      Dont verify ESX certificate
+  --clone-name CLONE_NAME
+                        Name of the newly created cloned VM
+  --clone-username CLONE_USERNAME
+                        Clone slave VM guest OS credentials to use for running final script
+  --clone-password CLONE_PASSWORD
+                        Clone slave VM guest OS credentials to use for running final script
+
+
+
+$$ pipenv run python3 main.py clone --help
+usage: main.py clone [-h] [--cloner-vm-name CLONER_VM_NAME] [--cloner-username CLONER_USERNAME]
+                     [--cloner-password CLONER_PASSWORD] [--cloner-esx-username CLONER_ESX_USERNAME] --cloner-esx-password
+                     CLONER_ESX_PASSWORD [--cloner-esx-hostname CLONER_ESX_HOSTNAME] [--cloner-esx-port CLONER_ESX_PORT]
+                     [--vm-to-clone VM_TO_CLONE]
+
+optional arguments:
+  -h, --help            show this help message and exit
   --cloner-vm-name CLONER_VM_NAME
                         Name of ubuntu slave VM to use for cloning a VM (in ESX due to vCenter not being available)
   --cloner-username CLONER_USERNAME
@@ -69,12 +91,37 @@ optional arguments:
   --cloner-esx-port CLONER_ESX_PORT
   --vm-to-clone VM_TO_CLONE
                         Name of VM to clone
-  --clone-name CLONE_NAME
-                        Name of the newly created cloned VM
-  --clone-username CLONE_USERNAME
-                        Clone slave VM guest OS credentials to use for running final script
-  --clone-password CLONE_PASSWORD
-                        Clone slave VM guest OS credentials to use for running final script
+
+
+
+$$ pipenv run python3 main.py run --help
+usage: main.py run [-h] executable arguments
+
+positional arguments:
+  executable  full path to an executable to run
+  arguments   string of arguments to execute said executable with
+
+optional arguments:
+  -h, --help  show this help message and exit
+
+
+
+$$ pipenv run python3 main.py bash --help
+usage: main.py bash [-h] bash_script
+
+positional arguments:
+  bash_script  contents of the bash script to execute
+
+optional arguments:
+  -h, --help   show this help message and exit
+
+
+
+$$ pipenv run python3 main.py destroy --help
+usage: main.py destroy [-h]
+
+optional arguments:
+  -h, --help  show this help message and exit
 ```
 
 ## Integrate POC into a real system
@@ -83,9 +130,9 @@ Probable steps:
 
 * Install a cloner VM on the client's ESX
 * Create a to_clone template VM on the client's ESX
-* implement real ansible commands instead of current `ls -l` in main.py
 
 *make sure to remove CDROM devices from to_clone template* and power it off
+*make sure to install vmtools on to_clone template*
 
 
 note: if master code does not run one off, but is part of a long living process, make sure to

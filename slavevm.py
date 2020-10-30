@@ -3,18 +3,40 @@ import time
 import re
 import requests
 import pyVmomi
-
+import tasks
 
 class SlaveVM:
-    def __init__(self, esx_hostname, esx_content, expected_slave_vm_name, username, password):
+    def __init__(self, esx_hostname, esx_connection, expected_slave_vm_name, username, password):
         self._esx_hostname = esx_hostname
-        self._esx_content = esx_content
+        self._esx_connection = esx_connection
+        self._esx_content = self._esx_connection.RetrieveContent()
         self._credentials = pyVmomi.vim.vm.guest.NamePasswordAuthentication(
             username=username,
             password=password)
         self._slave_vm = self._find_slave_vm(expected_slave_vm_name)
-        self._process_manager = esx_content.guestOperationsManager.processManager
-        self._file_manager = esx_content.guestOperationsManager.fileManager
+        self._process_manager = self._esx_content.guestOperationsManager.processManager
+        self._file_manager = self._esx_content.guestOperationsManager.fileManager
+
+    def powered_on(self):
+        power_state = str(self._slave_vm.runtime.powerState)
+        return power_state == "poweredOn"
+
+    def power_off(self):
+        logging.info("Powering off VM...")
+        task = self._slave_vm.PowerOffVM_Task()
+        logging.debug("Power off task started")
+        tasks.wait_for_tasks(self._esx_connection, [task])
+        logging.info("Done Powering off VM")
+
+    def destroy(self):
+        powered_on = self.powered_on()
+        logging.info("VM is powered on: %s", powered_on)
+        if powered_on:
+            self.power_off()
+        logging.info("Destroying VM...")
+        task = self._slave_vm.Destroy_Task()
+        tasks.wait_for_tasks(self._esx_connection, [task])
+        logging.info("Done destroying VM")
 
     def verify_vm_tools_are_installed(self):
         status = self._slave_vm.guest.toolsStatus
