@@ -93,8 +93,8 @@ set -x
 set -e
 cd /tmp
 rm -fr clone*
-ovftool vi://%(username)s:%(password)s@%(hostname)s:%(port)d/%(to_clone_vm_name)s clone.ova
-ovftool --powerOn --name=%(new_clone_vm_name)s clone.ova vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
+ovftool vi://%(username)s:%(password)s@%(hostname)s:%(port)d/%(to_clone_vm_name)s clone.ovf
+ovftool --powerOn --name=%(new_clone_vm_name)s clone.ovf vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
 rm -fr clone*
 """
 
