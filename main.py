@@ -102,9 +102,8 @@ else
     echo export done at `date`
 fi
 echo starting import at `date`
-ovftool --powerOn --name=%(new_clone_vm_name)s clone.ovf vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
+ovftool --overwrite --powerOn --name=%(new_clone_vm_name)s clone.ovf vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
 echo import done at `date`
-rm -fr clone*
 """
 
 
