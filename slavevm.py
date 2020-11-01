@@ -6,8 +6,9 @@ import pyVmomi
 import tasks
 
 class SlaveVM:
-    def __init__(self, esx_hostname, esx_connection, expected_slave_vm_name, username, password):
+    def __init__(self, esx_hostname, esx_port, esx_connection, expected_slave_vm_name, username, password):
         self._esx_hostname = esx_hostname
+        self._esx_port = esx_port
         self._esx_connection = esx_connection
         self._esx_content = self._esx_connection.RetrieveContent()
         self._credentials = pyVmomi.vim.vm.guest.NamePasswordAuthentication(
@@ -129,4 +130,4 @@ class SlaveVM:
         #            vim/vm/guest/FileManager.rst
         # Script fails in that case, saying URL has an invalid label.
         # By having hostname in place will take take care of this.
-        return re.sub(r"^https://\*:", "https://"+str(self._esx_hostname)+":", url)
+        return re.sub(r"^https://\*:\d*", "https://"+str(self._esx_hostname)+":"+str(self._esx_port), url)

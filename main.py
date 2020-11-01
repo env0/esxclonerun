@@ -19,6 +19,7 @@ def main(args):
         logging.info("Cloning VM")
         slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
             esx_connection=esx_connection,
             expected_slave_vm_name=args.cloner_vm_name,
             username=args.cloner_username,
@@ -37,6 +38,7 @@ def main(args):
         logging.info("VM Cloned successfully, waiting to be able to run on it...")
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
             esx_connection=esx_connection,
             expected_slave_vm_name=args.clone_name,
             username=args.clone_username,
@@ -46,6 +48,7 @@ def main(args):
     elif args.cmd == "bash":
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
             esx_connection=esx_connection,
             expected_slave_vm_name=args.clone_name,
             username=args.clone_username,
@@ -59,6 +62,7 @@ def main(args):
     elif args.cmd == "run":
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
             esx_connection=esx_connection,
             expected_slave_vm_name=args.clone_name,
             username=args.clone_username,
@@ -74,6 +78,7 @@ def main(args):
     elif args.cmd == "destroy":
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
             esx_connection=esx_connection,
             expected_slave_vm_name=args.clone_name,
             username=args.clone_username,
