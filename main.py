@@ -33,8 +33,10 @@ def main(args):
             port=args.cloner_esx_port,
             to_clone_vm_name=args.vm_to_clone,
             new_clone_vm_name=args.clone_name)
-        bashinslave.execute_bash_script_in_slave_vm(
-            slave_vm, script, verify_cert=not args.no_verify_cert, interval=1, timeout=600)
+        output = bashinslave.execute_bash_script_in_slave_vm(
+            slave_vm, script, verify_cert=not args.no_verify_cert, interval=1, timeout=60*60)
+        print("Output:")
+        print(output.decode())
         logging.info("VM Cloned successfully, waiting to be able to run on it...")
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
@@ -91,10 +93,17 @@ def main(args):
 _CLONING_SCRIPT = """
 set -x
 set -e
-cd /tmp
-rm -fr clone*
-ovftool vi://%(username)s:%(password)s@%(hostname)s:%(port)d/%(to_clone_vm_name)s clone.ovf
+cd $HOME
+if [ -e clone.ovf ]; then
+    echo Found `pwd`/clone.ovf, skipping export
+else
+    echo `pwd`/clone.ovf was not found, starting export at `date`
+    ovftool vi://%(username)s:%(password)s@%(hostname)s:%(port)d/%(to_clone_vm_name)s clone.ovf
+    echo export done at `date`
+fi
+echo starting import at `date`
 ovftool --powerOn --name=%(new_clone_vm_name)s clone.ovf vi://%(username)s:%(password)s@%(hostname)s:%(port)d/
+echo import done at `date`
 rm -fr clone*
 """
 
