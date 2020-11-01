@@ -7,7 +7,7 @@ deploy:
         - |
             set -e
             pip3 install pyvmomi requests
-            COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME"
+            COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
             python3 main.py $COMMON destroy || true
             python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=192.168.0.24 --cloner-esx-password="$PASSWORD" --vm-to-clone="env0-Vanila" --cloner-vm-name="env0-Cloner" --cloner-password=1
             python3 main.py $COMMON run "cmd" "/c \"echo hi\""
@@ -19,5 +19,5 @@ destroy:
         - |
             set -e
             pip3 install pyvmomi requests
-            COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME"
+            COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
             python3 main.py $COMMON destroy
