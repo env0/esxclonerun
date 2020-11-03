@@ -6,6 +6,7 @@ import pprint
 import pyVim.connect
 import slavevm
 import bashinslave
+import batinslave
 
 
 def main(args):
@@ -58,7 +59,23 @@ def main(args):
         clone_slave_vm.wait_for_vm_tools_to_be_installed()
         logging.info("VM tools are online, running script")
         output = bashinslave.execute_bash_script_in_slave_vm(
-            clone_slave_vm, args.bash_script, verify_cert=not args.no_verify_cert)
+            slave_vm=clone_slave_vm, script=args.bash_script, verify_cert=not args.no_verify_cert,
+            timeout=args.timeout)
+        print("Output:")
+        print(output)
+    elif args.cmd == "bat":
+        clone_slave_vm = slavevm.SlaveVM(
+            esx_hostname=args.esx_hostname,
+            esx_port=args.esx_port,
+            esx_connection=esx_connection,
+            expected_slave_vm_name=args.clone_name,
+            username=args.clone_username,
+            password=args.clone_password)
+        clone_slave_vm.wait_for_vm_tools_to_be_installed()
+        logging.info("VM tools are online, running script")
+        output = batinslave.execute_bat_script_in_slave_vm(
+            slave_vm=clone_slave_vm, guest_username=args.clone_username,
+            script=args.bat_script, verify_cert=not args.no_verify_cert, timeout=args.timeout)
         print("Output:")
         print(output)
     elif args.cmd == "run":
@@ -189,6 +206,22 @@ bash_cmd = subparsers.add_parser(
 bash_cmd.add_argument(
     "bash_script",
     help="contents of the bash script to execute")
+bash_cmd.add_argument(
+    "--timeout",
+    type=int,
+    default=60,
+    help="Timeout (seconds)")
+bat_cmd = subparsers.add_parser(
+    "bat",
+    help="Run a bat script inside a clone VM (windows guest only)")
+bat_cmd.add_argument(
+    "bat_script",
+    help="contents of the bat script to execute")
+bat_cmd.add_argument(
+    "--timeout",
+    type=int,
+    default=60,
+    help="Timeout (seconds)")
 run_cmd = subparsers.add_parser(
     "run",
     help="Run a program on clone VM (windows and linux guests compatible)")

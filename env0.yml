@@ -2,20 +2,23 @@ version: 1
 
 deploy:
   steps:
-    terraformApply:
+    terraformPlan:
       before:
         - |
             set -e
             pip3 install pyvmomi requests
             COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
+            echo "Attempting to destroy previous VM... (ignore if error comes out - VM might not exist)"
             python3 main.py $COMMON destroy || true
-            python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=192.168.0.24 --cloner-esx-password="$PASSWORD" --vm-to-clone="env0-Vanila" --cloner-vm-name="env0-Cloner" --cloner-password=1
-            python3 main.py $COMMON run "cmd.exe" "/c \"echo hi\""
+            echo "Ignore error above if VM did not exist"
+            python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=$ESX_INTERNAL_HOST --cloner-esx-password="$PASSWORD" --vm-to-clone=$VM_TO_CLONE --cloner-vm-name=$CLONER_VM_NAME --cloner-password=$CLONER_GUEST_PASSWORD
+            python3 main.py $COMMON bat "ipconfig"
+            echo "not yet available" > ip.txt
 
 destroy:
   steps:
     terraformDestroy:
-      after:
+      before:
         - |
             set -e
             pip3 install pyvmomi requests

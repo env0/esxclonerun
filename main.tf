@@ -5,3 +5,11 @@ terraform {
 resource "random_id" "id" {
   byte_length = 8
 }
+
+data "local_file" "ip" {
+  filename = "ip.txt"
+}
+
+output "ip" {
+  value = data.local_file.ip.content
+}
