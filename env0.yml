@@ -12,8 +12,8 @@ deploy:
             python3 main.py $COMMON destroy || true
             echo "Ignore error above if VM did not exist"
             python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=$ESX_INTERNAL_HOST --cloner-esx-password="$PASSWORD" --vm-to-clone=$VM_TO_CLONE --cloner-vm-name=$CLONER_VM_NAME --cloner-password=$CLONER_GUEST_PASSWORD
-            python3 main.py $COMMON bat "ipconfig"
-            echo "not yet available" > ip.txt
+            python3 main.py $COMMON bat "ipconfig" | tee ipconfig.txt
+            grep 'IPv4 Address' ipconfig.txt | sed 's/.* \([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/' > ip.txt
 
 destroy:
   steps:

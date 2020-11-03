@@ -62,7 +62,7 @@ def main(args):
             slave_vm=clone_slave_vm, script=args.bash_script, verify_cert=not args.no_verify_cert,
             timeout=args.timeout)
         print("Output:")
-        print(output)
+        print(output.decode())
     elif args.cmd == "bat":
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
@@ -77,7 +77,7 @@ def main(args):
             slave_vm=clone_slave_vm, guest_username=args.clone_username,
             script=args.bat_script, verify_cert=not args.no_verify_cert, timeout=args.timeout)
         print("Output:")
-        print(output)
+        print(output.decode())
     elif args.cmd == "run":
         clone_slave_vm = slavevm.SlaveVM(
             esx_hostname=args.esx_hostname,
