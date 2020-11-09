@@ -17,13 +17,13 @@ deploy:
             COMMON_BASE="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert"
             COMMON="$COMMON_BASE --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
             echo "Attempting to destroy previous VM... (ignore if error comes out - VM might not exist)"
-            python3 main.py $COMMON destroy || true
+            #python3 main.py $COMMON destroy || true
             echo "Ignore error above if VM did not exist"
-            python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=$ESX_INTERNAL_HOST --cloner-esx-password="$PASSWORD" --vm-to-clone=$VM_TO_CLONE --cloner-vm-name=$CLONER_VM_NAME --cloner-password=$CLONER_GUEST_PASSWORD
+            #python3 main.py $COMMON clone --cloner-esx-username=$USER --cloner-esx-hostname=$ESX_INTERNAL_HOST --cloner-esx-password="$PASSWORD" --vm-to-clone=$VM_TO_CLONE --cloner-vm-name=$CLONER_VM_NAME --cloner-password=$CLONER_GUEST_PASSWORD
             python3 main.py $COMMON bat "ipconfig" | tee ipconfig.txt
             grep 'IPv4 Address' ipconfig.txt | sed 's/.* \([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/' > ip.txt
             python3 main.py $COMMON bat "$BAT_SCRIPT_TO_RUN"
-            python3 main.py $COMMON_BASE --clone-name=$CLONER_VM_NAME --clone-password=$CLONER_GUEST_PASSWORD --clone-username=me bash "ansible-playbook tanglesNightlyPlaybook.yml -i /home/me/TanglesNightly/Ansible/hosts.yml"
+            python3 main.py $COMMON_BASE --clone-name=$CLONER_VM_NAME --clone-password=$CLONER_GUEST_PASSWORD --clone-username=me bash "cd TanglesNightly/Ansible ; ansible-playbook tanglesNightlyPlaybook.yml -i /home/me/TanglesNightly/Ansible/hosts.yml"
             
 
 destroy:
