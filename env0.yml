@@ -2,12 +2,20 @@ version: 1
 
 deploy:
   steps:
+    setupVariables:
+      after:
+        - |
+            if [ "$BUILD" == "changeme" ]; then
+                echo "You must enter build number into 'BUILD' variable to deploy this environment"
+                exit 1
+            fi
     terraformPlan:
       before:
         - |
             set -e
             pip3 install pyvmomi requests
-            COMMON="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
+            COMMON_BASE="--esx-hostname=$HOST --esx-username=$USER --esx-password=$PASSWORD --esx-port=$PORT --no-verify-cert"
+            COMMON="$COMMON_BASE --clone-name=clone-$ENV0_WORKSPACE_NAME --clone-username=$WINDOWS_OS_USERNAME --clone-password=$WINDOWS_OS_PASSWORD"
             echo "Attempting to destroy previous VM... (ignore if error comes out - VM might not exist)"
             python3 main.py $COMMON destroy || true
             echo "Ignore error above if VM did not exist"
@@ -15,6 +23,8 @@ deploy:
             python3 main.py $COMMON bat "ipconfig" | tee ipconfig.txt
             grep 'IPv4 Address' ipconfig.txt | sed 's/.* \([0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/' > ip.txt
             python3 main.py $COMMON bat "$BAT_SCRIPT_TO_RUN"
+            python3 main.py $COMMON_BASE --clone-name=$CLONER_VM_NAME --clone-password=$CLONER_GUEST_PASSWORD --clone-username=me bash "ansible-playbook tanglesNightlyPlaybook.yml -i /home/me/TanglesNightly/Ansible/hosts.yml"
+            
 
 destroy:
   steps:
